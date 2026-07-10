@@ -32,21 +32,26 @@ export function MenuCatalog({ categories }: MenuCatalogProps) {
     setHydrated(true);
   }, []);
 
+  // Без эмодзи: вне Telegram (десктопные браузеры) они рендерятся
+  // монохромными глифами и разваливают вид ленты.
   const chipOptions = useMemo(
     () => [
       { value: ALL_CATEGORY, label: "Все" },
       ...categories.map((category) => ({
         value: category.id,
-        label: category.emoji ? `${category.emoji} ${category.name}` : category.name,
+        label: category.name,
       })),
     ],
     [categories],
   );
 
-  const visibleItems: MenuItemData[] =
+  // «Все» — секции по категориям с заголовками; конкретная категория — одна секция.
+  const visibleSections: MenuCategoryData[] =
     activeCategory === ALL_CATEGORY
-      ? categories.flatMap((category) => category.items)
-      : (categories.find((category) => category.id === activeCategory)?.items ?? []);
+      ? categories.filter((category) => category.items.length > 0)
+      : categories.filter((category) => category.id === activeCategory);
+
+  const hasItems = visibleSections.some((section) => section.items.length > 0);
 
   const handleCategoryChange = (value: string) => {
     haptic.selection();
@@ -78,7 +83,7 @@ export function MenuCatalog({ categories }: MenuCatalogProps) {
         </div>
       </div>
 
-      {visibleItems.length === 0 ? (
+      {!hasItems ? (
         <div className="px-4 pt-12">
           <EmptyState
             title="В этой категории пока пусто"
@@ -90,17 +95,24 @@ export function MenuCatalog({ categories }: MenuCatalogProps) {
           />
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 px-4 pt-3">
-          {visibleItems.map((item, index) => (
-            <DishCard
-              key={item.id}
-              item={item}
-              onOpen={handleOpenItem}
-              hydrated={hydrated}
-              priority={index < 4}
-            />
-          ))}
-        </div>
+        visibleSections.map((section, sectionIndex) => (
+          <section key={section.id} className="px-4 pt-4">
+            <h2 className="pb-2 text-lg font-bold leading-tight text-ink">
+              {section.name}
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              {section.items.map((item, index) => (
+                <DishCard
+                  key={item.id}
+                  item={item}
+                  onOpen={handleOpenItem}
+                  hydrated={hydrated}
+                  priority={sectionIndex === 0 && index < 4}
+                />
+              ))}
+            </div>
+          </section>
+        ))
       )}
 
       <DishSheet

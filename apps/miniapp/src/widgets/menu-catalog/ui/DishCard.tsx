@@ -91,9 +91,9 @@ export function DishCard({ item, onOpen, hydrated, priority = false }: DishCardP
             </div>
           )}
         </div>
-        <h2 className="line-clamp-2 min-h-[2.5em] px-3 pt-2 text-sm font-medium leading-snug text-ink">
+        <h3 className="line-clamp-2 min-h-[2.5em] px-3 pt-2 text-sm font-medium leading-snug text-ink">
           {item.name}
-        </h2>
+        </h3>
       </button>
 
       <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-2">
