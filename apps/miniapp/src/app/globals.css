@@ -1,0 +1,199 @@
+@import "tailwindcss";
+@source "../../../../packages/ui/src";
+
+/* ============================================================
+   Telegram Mini App «Ресторан — Алматы»
+   app/globals.css — Tailwind CSS v4, CSS-first конфигурация
+   Светлая тема = фолбэки к Telegram theme params.
+   Тёмная тема = html[data-theme="dark"] (ставится из
+   Telegram.WebApp.colorScheme при инициализации).
+   ============================================================ */
+
+/* ---------- 1. Runtime-переменные (реагируют на тему) ---------- */
+
+:root {
+  color-scheme: light;
+
+  /* Поверхности — приоритет у Telegram theme params */
+  --app-bg:          var(--tg-theme-bg-color, #F7F5F2);
+  --app-surface:     var(--tg-theme-secondary-bg-color, #FFFFFF);
+  --app-header-bg:   var(--tg-theme-header-bg-color, #FFFFFF);
+  --app-ink:         var(--tg-theme-text-color, #1C1917);
+  --app-muted:       var(--tg-theme-hint-color, #6E6862);
+  --app-link:        var(--tg-theme-link-color, #B45309);
+  --app-line:        var(--tg-theme-section-separator-color, #E9E4DE);
+
+  /* Брендовый акцент — тёплая терракота (еда, не «токсичный» оранжевый).
+     AA: белый текст на #C2410C ≈ 5.0:1 */
+  --app-brand:        #C2410C;
+  --app-brand-press:  #A83A0B;
+  --app-brand-soft:   #FCEEE5;
+  --app-on-brand:     #FFFFFF;
+
+  /* Семантика. AA на белом: #1F7A3F ≈ 5.1, #B42323 ≈ 6.3 */
+  --app-success:      #1F7A3F;
+  --app-success-soft: #E7F5EC;
+  --app-danger:       #B42323;
+  --app-danger-soft:  #FBEBEB;
+
+  /* Тени */
+  --app-shadow-card:  0 1px 2px rgb(28 25 23 / 0.05), 0 4px 12px rgb(28 25 23 / 0.06);
+  --app-shadow-sheet: 0 -8px 32px rgb(28 25 23 / 0.14);
+  --app-shadow-bar:   0 -2px 16px rgb(28 25 23 / 0.10);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --app-bg:          var(--tg-theme-bg-color, #171512);
+  --app-surface:     var(--tg-theme-secondary-bg-color, #211E1A);
+  --app-header-bg:   var(--tg-theme-header-bg-color, #211E1A);
+  --app-ink:         var(--tg-theme-text-color, #F3EFEA);
+  --app-muted:       var(--tg-theme-hint-color, #A8A29E);
+  --app-link:        var(--tg-theme-link-color, #F0A36A);
+  --app-line:        var(--tg-theme-section-separator-color, #37322C);
+
+  /* В тёмной теме акцент ярче, текст на нём — тёмный (AA ≈ 5.8) */
+  --app-brand:        #E8632C;
+  --app-brand-press:  #D4551F;
+  --app-brand-soft:   #3A2417;
+  --app-on-brand:     #23110A;
+
+  --app-success:      #57C979;
+  --app-success-soft: #1B3324;
+  --app-danger:       #F17E7E;
+  --app-danger-soft:  #3B2020;
+
+  --app-shadow-card:  0 1px 2px rgb(0 0 0 / 0.35), 0 4px 14px rgb(0 0 0 / 0.30);
+  --app-shadow-sheet: 0 -8px 32px rgb(0 0 0 / 0.55);
+  --app-shadow-bar:   0 -2px 16px rgb(0 0 0 / 0.45);
+}
+
+/* ---------- 2. Статические токены ---------- */
+
+@theme {
+  /* Типографика: системный стек — родной вид внутри Telegram */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+
+  --text-title: 1.375rem;         /* 22px — заголовок экрана */
+  --text-title--line-height: 1.25;
+  --text-title--font-weight: 700;
+  --text-price: 1.0625rem;        /* 17px — цены */
+  --text-price--line-height: 1.3;
+  --text-price--font-weight: 600;
+  --text-caption: 0.8125rem;      /* 13px — подписи, вес блюда */
+  --text-caption--line-height: 1.35;
+
+  /* Радиусы */
+  --radius-card:   1rem;      /* 16px — карточки блюд/заказов */
+  --radius-button: 0.75rem;   /* 12px — кнопки, инпуты, слоты */
+  --radius-sheet:  1.25rem;   /* 20px — верхние углы bottom sheet */
+  --radius-chip:   9999px;    /* чипсы категорий, бейджи */
+
+  /* Отступы: базовый шаг Tailwind 4px оставляем (--spacing: 0.25rem).
+     Контентный гуттер экрана — 16px (px-4), между карточками — 12px (gap-3). */
+}
+
+/* ---------- 3. Динамические токены (резолвятся в месте использования) ---------- */
+
+@theme inline {
+  --color-bg:           var(--app-bg);
+  --color-surface:      var(--app-surface);
+  --color-header:       var(--app-header-bg);
+  --color-ink:          var(--app-ink);
+  --color-muted:        var(--app-muted);
+  --color-link:         var(--app-link);
+  --color-line:         var(--app-line);
+
+  --color-brand:        var(--app-brand);
+  --color-brand-press:  var(--app-brand-press);
+  --color-brand-soft:   var(--app-brand-soft);
+  --color-on-brand:     var(--app-on-brand);
+
+  --color-success:      var(--app-success);
+  --color-success-soft: var(--app-success-soft);
+  --color-danger:       var(--app-danger);
+  --color-danger-soft:  var(--app-danger-soft);
+
+  --shadow-card:  var(--app-shadow-card);
+  --shadow-sheet: var(--app-shadow-sheet);
+  --shadow-bar:   var(--app-shadow-bar);
+}
+
+/* ---------- 4. Кастомные утилиты ---------- */
+
+/* Safe-area для sticky-элементов (cart-bar, кнопка «Оформить», bottom sheet) */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@utility pb-safe-3 {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+}
+@utility pb-safe-4 {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+}
+
+/* Горизонтальный скролл чипсов без скроллбара */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Минимальный touch-target 44px (WCAG 2.5.5 / Apple HIG) */
+@utility tap-target {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+/* Skeleton-пульсация */
+@utility skeleton {
+  border-radius: var(--radius-button);
+  background-color: var(--app-line);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+/* ---------- 5. База ---------- */
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--app-bg);
+    color: var(--app-ink);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none; /* не дёргать pull-to-refresh Telegram */
+  }
+
+  /* Цены и суммы — табличные цифры, чтобы степперы не «прыгали» */
+  [data-numeric], .text-price {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Видимый фокус для клавиатуры/скринридеров (a11y ≥95) */
+  :focus-visible {
+    outline: 2px solid var(--app-brand);
+    outline-offset: 2px;
+  }
+
+  button, [role="button"] {
+    touch-action: manipulation; /* убрать 300ms delay и двойной тап-зум */
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
