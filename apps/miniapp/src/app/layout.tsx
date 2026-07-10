@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { TelegramInit } from "./telegram-init";
 
 export const metadata: Metadata = {
   title: "Апорт — кафе в Алматы",
@@ -17,7 +18,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body>
+        <TelegramInit />
+        {children}
+      </body>
     </html>
   );
 }
