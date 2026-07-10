@@ -2,6 +2,8 @@
 
 Заказ еды на самовывоз, не выходя из Telegram: каталог меню → корзина → оформление → подтверждение ботом → админ-панель заказов для персонала.
 
+**Live:** [resto-miniapp.vercel.app](https://resto-miniapp.vercel.app) (веб-превью; полный опыт — внутри Telegram)
+
 **Стек:** Next.js 16 (App Router, RSC + Server Actions) · TypeScript strict · Turborepo + pnpm · Tailwind CSS v4 · Prisma 7 + Postgres · Telegram Bot API + Mini Apps · Zod · Vitest · Vercel
 
 <p align="center">
