@@ -15,17 +15,51 @@ const DishSheet = dynamic(
 );
 
 const ALL_CATEGORY = "all";
+// Виртуальный чипс «Избранное»: cuid-id категорий с ним не пересекаются
+const FAVORITES_CATEGORY = "favorites";
 
 type MenuCatalogProps = {
   categories: MenuCategoryData[];
   /** Сессия принадлежит админу (ADMIN_TG_IDS) — показать вход в админку */
   showAdminLink?: boolean;
+  /** id избранных блюд из БД (RSC) — начальное значение optimistic-Set */
+  favoriteIds: string[];
 };
 
-export function MenuCatalog({ categories, showAdminLink = false }: MenuCatalogProps) {
+export function MenuCatalog({
+  categories,
+  showAdminLink = false,
+  favoriteIds,
+}: MenuCatalogProps) {
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [selectedItem, setSelectedItem] = useState<MenuItemData | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Optimistic-состояние избранного: инициализируется серверным пропом,
+  // дальше живёт на клиенте (FavoriteButton переключает и откатывает).
+  // SSR и первый клиентский рендер видят один и тот же проп — mismatch нет.
+  const [favoriteIdSet, setFavoriteIdSet] = useState<Set<string>>(
+    () => new Set(favoriteIds),
+  );
+  // Чипс «Избранное» виден, если избранное было при загрузке или появилось
+  // в этой сессии. После снятия всех сердец чипс НЕ прячем — вкладка
+  // показывает EmptyState, а не исчезает из-под пальца.
+  const [showFavoritesChip, setShowFavoritesChip] = useState(
+    favoriteIds.length > 0,
+  );
+
+  const handleToggleFavorite = (menuItemId: string, favorited: boolean) => {
+    setFavoriteIdSet((prev) => {
+      const next = new Set(prev);
+      if (favorited) {
+        next.add(menuItemId);
+      } else {
+        next.delete(menuItemId);
+      }
+      return next;
+    });
+    if (favorited) setShowFavoritesChip(true);
+  };
 
   // Корзина живёт в localStorage (zustand persist): до гидрации показываем
   // «пустое» состояние, чтобы SSR-разметка совпала с первым рендером клиента.
@@ -39,19 +73,31 @@ export function MenuCatalog({ categories, showAdminLink = false }: MenuCatalogPr
   const chipOptions = useMemo(
     () => [
       { value: ALL_CATEGORY, label: "Все" },
+      ...(showFavoritesChip
+        ? [{ value: FAVORITES_CATEGORY, label: "Избранное" }]
+        : []),
       ...categories.map((category) => ({
         value: category.id,
         label: category.name,
       })),
     ],
-    [categories],
+    [categories, showFavoritesChip],
   );
 
-  // «Все» — секции по категориям с заголовками; конкретная категория — одна секция.
+  // «Все» — секции по категориям с заголовками; конкретная категория — одна
+  // секция; «Избранное» — те же секции, но только с избранными блюдами
+  // (заголовки сохраняются, опустевшие секции скрываются).
   const visibleSections: MenuCategoryData[] =
     activeCategory === ALL_CATEGORY
       ? categories.filter((category) => category.items.length > 0)
-      : categories.filter((category) => category.id === activeCategory);
+      : activeCategory === FAVORITES_CATEGORY
+        ? categories
+            .map((category) => ({
+              ...category,
+              items: category.items.filter((item) => favoriteIdSet.has(item.id)),
+            }))
+            .filter((category) => category.items.length > 0)
+        : categories.filter((category) => category.id === activeCategory);
 
   const hasItems = visibleSections.some((section) => section.items.length > 0);
 
@@ -97,14 +143,22 @@ export function MenuCatalog({ categories, showAdminLink = false }: MenuCatalogPr
 
       {!hasItems ? (
         <div className="px-4 pt-12">
-          <EmptyState
-            title="В этой категории пока пусто"
-            action={
-              <Button onClick={() => handleCategoryChange(ALL_CATEGORY)}>
-                Смотреть всё меню
-              </Button>
-            }
-          />
+          {activeCategory === FAVORITES_CATEGORY ? (
+            <EmptyState
+              icon="♥"
+              title="В избранном пусто"
+              description="Жмите ♥ на блюдах, чтобы собрать сюда любимое"
+            />
+          ) : (
+            <EmptyState
+              title="В этой категории пока пусто"
+              action={
+                <Button onClick={() => handleCategoryChange(ALL_CATEGORY)}>
+                  Смотреть всё меню
+                </Button>
+              }
+            />
+          )}
         </div>
       ) : (
         visibleSections.map((section, sectionIndex) => (
@@ -120,6 +174,8 @@ export function MenuCatalog({ categories, showAdminLink = false }: MenuCatalogPr
                   onOpen={handleOpenItem}
                   hydrated={hydrated}
                   priority={sectionIndex === 0 && index < 4}
+                  favorited={favoriteIdSet.has(item.id)}
+                  onToggleFavorite={handleToggleFavorite}
                 />
               ))}
             </div>

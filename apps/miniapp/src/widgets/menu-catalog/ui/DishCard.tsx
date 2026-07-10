@@ -8,6 +8,7 @@ import {
   useCartStore,
 } from "@/entities/cart";
 import type { MenuItemData } from "@/entities/menu";
+import { FavoriteButton } from "@/features/favorites";
 import { haptic } from "@/shared/lib/haptics";
 
 type DishCardProps = {
@@ -21,9 +22,20 @@ type DishCardProps = {
   hydrated: boolean;
   /** true для карточек первого экрана — LCP-фото грузится с приоритетом */
   priority?: boolean;
+  /** Блюдо в избранном (из optimistic-Set родителя) */
+  favorited: boolean;
+  /** Optimistic-переключение избранного в Set родителя (и откат при ошибке) */
+  onToggleFavorite: (menuItemId: string, favorited: boolean) => void;
 };
 
-export function DishCard({ item, onOpen, hydrated, priority = false }: DishCardProps) {
+export function DishCard({
+  item,
+  onOpen,
+  hydrated,
+  priority = false,
+  favorited,
+  onToggleFavorite,
+}: DishCardProps) {
   const quantity = useCartStore(
     (state) =>
       state.items.find((cartItem) => cartItem.menuItemId === item.id)?.quantity ?? 0,
@@ -65,7 +77,7 @@ export function DishCard({ item, onOpen, hydrated, priority = false }: DishCardP
   };
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-card bg-surface shadow-card">
+    <article className="relative flex flex-col overflow-hidden rounded-card bg-surface shadow-card">
       <button
         type="button"
         onClick={() => onOpen(item)}
@@ -95,6 +107,15 @@ export function DishCard({ item, onOpen, hydrated, priority = false }: DishCardP
           {item.name}
         </h3>
       </button>
+
+      {/* Сердце — сиблинг кнопки карточки (button-в-button невалиден),
+          absolute поверх правого верхнего угла фото */}
+      <FavoriteButton
+        menuItemId={item.id}
+        favorited={favorited}
+        onToggle={onToggleFavorite}
+        className="absolute right-2 top-2"
+      />
 
       <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-2">
         <span className="text-price text-ink">{formatTenge(item.priceTenge)}</span>
