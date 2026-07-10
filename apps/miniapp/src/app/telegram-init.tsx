@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 /**
@@ -20,7 +21,7 @@ function applyTheme(isDark: boolean): void {
   }
 }
 
-async function postInitData(initDataRaw: string): Promise<void> {
+async function postInitData(initDataRaw: string): Promise<boolean> {
   // Один ретрай: мобильная сеть в webview нестабильна (ui-spec «Offline»).
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -29,7 +30,7 @@ async function postInitData(initDataRaw: string): Promise<void> {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ initDataRaw }),
       });
-      if (response.ok) return;
+      if (response.ok) return true;
       console.warn(
         `[telegram-init] auth attempt ${attempt + 1} failed: HTTP ${response.status}`,
       );
@@ -40,6 +41,7 @@ async function postInitData(initDataRaw: string): Promise<void> {
       );
     }
   }
+  return false;
 }
 
 // Модульный флаг: эффект в dev (StrictMode) монтируется дважды —
@@ -47,6 +49,8 @@ async function postInitData(initDataRaw: string): Promise<void> {
 let initStarted = false;
 
 export function TelegramInit() {
+  const router = useRouter();
+
   useEffect(() => {
     if (initStarted) return;
     initStarted = true;
@@ -112,7 +116,10 @@ export function TelegramInit() {
         initDataRaw = undefined;
       }
       if (initDataRaw && !cancelled) {
-        await postInitData(initDataRaw);
+        const authed = await postInitData(initDataRaw);
+        // RSC-рендер первого захода прошёл без сессии — обновляем, чтобы
+        // серверные части (ссылка «Админка», имя в чекауте) её увидели.
+        if (authed && !cancelled) router.refresh();
       }
     })();
 

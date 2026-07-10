@@ -18,9 +18,11 @@ const ALL_CATEGORY = "all";
 
 type MenuCatalogProps = {
   categories: MenuCategoryData[];
+  /** Сессия принадлежит админу (ADMIN_TG_IDS) — показать вход в админку */
+  showAdminLink?: boolean;
 };
 
-export function MenuCatalog({ categories }: MenuCatalogProps) {
+export function MenuCatalog({ categories, showAdminLink = false }: MenuCatalogProps) {
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [selectedItem, setSelectedItem] = useState<MenuItemData | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -69,9 +71,19 @@ export function MenuCatalog({ categories }: MenuCatalogProps) {
   return (
     <>
       <div className="sticky top-0 z-10 bg-header">
-        <header className="px-4 pb-2 pt-3">
-          <h1 className="text-title text-ink">Апорт</h1>
-          <p className="text-caption text-muted">Самовывоз ・ Алматы</p>
+        <header className="flex items-start justify-between gap-3 px-4 pb-2 pt-3">
+          <div>
+            <h1 className="text-title text-ink">Апорт</h1>
+            <p className="text-caption text-muted">Самовывоз ・ Алматы</p>
+          </div>
+          {showAdminLink && (
+            <a
+              href="/admin"
+              className="tap-target inline-flex items-center rounded-chip border border-line bg-surface px-3 text-sm font-medium text-ink"
+            >
+              Админка
+            </a>
+          )}
         </header>
         <div className="border-b border-line pb-2">
           <ChipTabs

@@ -114,17 +114,22 @@ export async function requireSession(): Promise<Session> {
   return session;
 }
 
+/** tgUserId входит в ADMIN_TG_IDS (csv в env)? Только для сервера. */
+export function isAdminId(tgUserId: string): boolean {
+  return (process.env.ADMIN_TG_IDS ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean)
+    .includes(tgUserId);
+}
+
 /**
  * requireSession + проверка, что tgUserId входит в ADMIN_TG_IDS (csv в env).
  * Не входит → FORBIDDEN.
  */
 export async function requireAdmin(): Promise<Session> {
   const session = await requireSession();
-  const adminIds = (process.env.ADMIN_TG_IDS ?? "")
-    .split(",")
-    .map((id) => id.trim())
-    .filter(Boolean);
-  if (!adminIds.includes(session.tgUserId)) {
+  if (!isAdminId(session.tgUserId)) {
     throw new Error("FORBIDDEN");
   }
   return session;

@@ -1,5 +1,6 @@
 import { EmptyState } from "@repo/ui";
 import { getMenuCatalog } from "@/entities/menu";
+import { getSession, isAdminId } from "@/shared/session";
 import { CartBar } from "@/widgets/cart-bar";
 import { MenuCatalog } from "@/widgets/menu-catalog";
 
@@ -7,7 +8,8 @@ import { MenuCatalog } from "@/widgets/menu-catalog";
 export const dynamic = "force-dynamic";
 
 export default async function CatalogPage() {
-  const categories = await getMenuCatalog();
+  const [categories, session] = await Promise.all([getMenuCatalog(), getSession()]);
+  const showAdminLink = session !== null && isAdminId(session.tgUserId);
   const hasDishes = categories.some((category) => category.items.length > 0);
 
   if (!hasDishes) {
@@ -23,7 +25,7 @@ export default async function CatalogPage() {
 
   return (
     <main className="min-h-dvh pb-28">
-      <MenuCatalog categories={categories} />
+      <MenuCatalog categories={categories} showAdminLink={showAdminLink} />
       <CartBar />
     </main>
   );
