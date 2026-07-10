@@ -1,6 +1,9 @@
 # deps
 node_modules/
 
+# codegen
+packages/db/src/generated/
+
 # builds
 .next/
 .turbo/

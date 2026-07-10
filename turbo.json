@@ -1,0 +1,35 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build", "generate"],
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": [
+        "DATABASE_URL",
+        "BOT_TOKEN",
+        "TELEGRAM_WEBHOOK_SECRET",
+        "SESSION_SECRET",
+        "ADMIN_TG_IDS",
+        "IIKO_PROVIDER",
+        "IIKO_MOCK_FAILURE_RATE",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "NEXT_PUBLIC_APP_URL"
+      ]
+    },
+    "generate": {
+      "cache": false
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {},
+    "typecheck": {
+      "dependsOn": ["^generate", "generate"]
+    },
+    "test": {
+      "dependsOn": ["^generate", "generate"]
+    }
+  }
+}
