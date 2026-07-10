@@ -19,9 +19,11 @@ type DishCardProps = {
    * клиентский рендер совпадают (везде «+»), степпер появляется после гидрации.
    */
   hydrated: boolean;
+  /** true для карточек первого экрана — LCP-фото грузится с приоритетом */
+  priority?: boolean;
 };
 
-export function DishCard({ item, onOpen, hydrated }: DishCardProps) {
+export function DishCard({ item, onOpen, hydrated, priority = false }: DishCardProps) {
   const quantity = useCartStore(
     (state) =>
       state.items.find((cartItem) => cartItem.menuItemId === item.id)?.quantity ?? 0,
@@ -77,6 +79,7 @@ export function DishCard({ item, onOpen, hydrated }: DishCardProps) {
               alt={item.name}
               fill
               sizes="50vw"
+              priority={priority}
               className="object-cover"
             />
           ) : (
@@ -88,9 +91,9 @@ export function DishCard({ item, onOpen, hydrated }: DishCardProps) {
             </div>
           )}
         </div>
-        <h3 className="line-clamp-2 min-h-[2.5em] px-3 pt-2 text-sm font-medium leading-snug text-ink">
+        <h2 className="line-clamp-2 min-h-[2.5em] px-3 pt-2 text-sm font-medium leading-snug text-ink">
           {item.name}
-        </h3>
+        </h2>
       </button>
 
       <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-2">

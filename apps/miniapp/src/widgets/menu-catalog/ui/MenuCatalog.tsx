@@ -84,12 +84,13 @@ export function MenuCatalog({ categories }: MenuCatalogProps) {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 px-4 pt-3">
-          {visibleItems.map((item) => (
+          {visibleItems.map((item, index) => (
             <DishCard
               key={item.id}
               item={item}
               onOpen={handleOpenItem}
               hydrated={hydrated}
+              priority={index < 4}
             />
           ))}
         </div>

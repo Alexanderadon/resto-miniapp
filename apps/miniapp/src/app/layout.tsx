@@ -9,11 +9,11 @@ export const metadata: Metadata = {
   description: "Меню, заказ и самовывоз — прямо в Telegram",
 };
 
+// Без запрета зума: user-scalable=no валит a11y (WCAG 1.4.4), а двойной
+// тап-зум на кнопках уже отключён через touch-action: manipulation.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
 };
 
