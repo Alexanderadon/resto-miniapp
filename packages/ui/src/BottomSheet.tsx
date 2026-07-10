@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { cn } from "./cn";
+import { IconButton } from "./IconButton";
 
 const TRANSITION_MS = 220;
 const CLOSE_THRESHOLD_PX = 88;
@@ -41,10 +42,14 @@ export function BottomSheet({
   const [isDragging, setIsDragging] = useState(false);
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const dragStartY = useRef<number | null>(null);
+  /** Кто был в фокусе до открытия — вернём фокус при закрытии */
+  const lastActiveRef = useRef<HTMLElement | null>(null);
 
   // Монтирование + анимация входа/выхода
   useEffect(() => {
     if (open) {
+      lastActiveRef.current =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setRendered(true);
       // двойной rAF — стартовые стили успевают закоммититься до анимации
       let raf2 = 0;
@@ -59,6 +64,9 @@ export function BottomSheet({
     setShown(false);
     setDragY(0);
     setIsDragging(false);
+    // Возврат фокуса туда, откуда шит открывали (диалоговый паттерн)
+    lastActiveRef.current?.focus({ preventScroll: true });
+    lastActiveRef.current = null;
     const timer = setTimeout(() => setRendered(false), TRANSITION_MS);
     return () => clearTimeout(timer);
   }, [open]);
@@ -144,6 +152,21 @@ export function BottomSheet({
         >
           <div className="mx-auto h-1 w-9 rounded-full bg-line" />
         </div>
+        <IconButton
+          variant="ghost"
+          aria-label="Закрыть"
+          onClick={onClose}
+          className="absolute right-2 top-2 z-10"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path
+              d="M5 5l10 10M15 5L5 15"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </IconButton>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
         {footer && (
           <div className="shrink-0 border-t border-line bg-surface px-4 pt-3 pb-safe-3">

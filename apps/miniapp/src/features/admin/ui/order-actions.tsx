@@ -32,8 +32,13 @@ export function OrderActions({ orderId, status, disabled = false, onResult }: Pr
 
   const apply = (to: OrderStatus) => {
     startTransition(async () => {
-      const result = await changeOrderStatus({ orderId, from: status, to });
-      onResult(result);
+      try {
+        const result = await changeOrderStatus({ orderId, from: status, to });
+        onResult(result);
+      } catch {
+        // Сеть оборвалась/сервер упал — server action бросает, показываем тост
+        onResult({ ok: false, code: "UNKNOWN", message: "Не удалось обновить заказ" });
+      }
     });
   };
 

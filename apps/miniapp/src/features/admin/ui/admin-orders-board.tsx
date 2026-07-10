@@ -47,6 +47,12 @@ export function AdminOrdersBoard({ orders, filter, newCount, activeCount }: Prop
     };
   }, []);
 
+  // Смена фильтра — не подсветка: сбрасываем известные id до эффекта по [orders]
+  useEffect(() => {
+    knownIds.current = null;
+    setFlashIds(new Set());
+  }, [filter]);
+
   // Заказы, появившиеся при авто-обновлении, подсвечиваем brand-soft на 2с
   useEffect(() => {
     if (knownIds.current === null) {

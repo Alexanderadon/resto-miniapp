@@ -90,7 +90,7 @@ export function DishSheet({ item, open, onClose }: DishSheetProps) {
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose}>
+    <BottomSheet open={open} onClose={onClose} label={item?.name}>
       {item ? (
         <div className="flex max-h-[85dvh] flex-col">
           <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-line">

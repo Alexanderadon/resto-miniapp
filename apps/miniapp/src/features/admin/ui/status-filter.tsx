@@ -18,10 +18,11 @@ export function StatusFilter({ value, newCount }: Props) {
   return (
     <div className="overflow-x-auto scrollbar-none">
       <ChipTabs
+        aria-label="Фильтр по статусу"
         tabs={STATUS_FILTERS.map((f) => ({
           value: f.value,
           label: f.label,
-          count: f.value === "new" && newCount > 0 ? newCount : undefined,
+          badge: f.value === "new" && newCount > 0 ? newCount : undefined,
         }))}
         value={value}
         onChange={(next: string) => {

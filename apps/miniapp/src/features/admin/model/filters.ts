@@ -33,7 +33,7 @@ export const STATUS_FILTERS = [
     value: "ready",
     label: "Готовы",
     statuses: ["READY"],
-    emptyText: "Нет заказов со статусом «Готов»",
+    emptyText: "Нет заказов со статусом „Готовы“",
   },
   {
     value: "done",

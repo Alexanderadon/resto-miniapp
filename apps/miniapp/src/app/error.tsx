@@ -4,7 +4,9 @@ import { useEffect } from "react";
 import { ErrorState } from "@repo/ui";
 import { haptic } from "@/shared/lib/haptics";
 
-export default function CatalogError({
+// Общий error boundary приложения: текст нейтральный — экран может быть любым
+// (каталог, корзина, оформление, заказ, админка).
+export default function AppError({
   error,
   reset,
 }: {
@@ -18,7 +20,7 @@ export default function CatalogError({
 
   return (
     <main className="flex min-h-dvh items-center justify-center px-4">
-      <ErrorState title="Не удалось загрузить меню" onRetry={reset} />
+      <ErrorState title="Что-то пошло не так" description="Попробуйте ещё раз" onRetry={reset} />
     </main>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { OfflineBanner } from "@/shared/ui/offline-banner";
 import { TelegramInit } from "./telegram-init";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ru">
       <body>
         <TelegramInit />
+        <OfflineBanner />
         {children}
       </body>
     </html>
