@@ -1,11 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { Button, ChipTabs, EmptyState } from "@repo/ui";
 import type { MenuCategoryData, MenuItemData } from "@/entities/menu";
-import { DishSheet } from "@/features/dish-sheet";
 import { haptic } from "@/shared/lib/haptics";
 import { DishCard } from "./DishCard";
+
+// Шит блюда нужен только после тапа по карточке — выносим из бандла
+// первого экрана (даёт заметный кусок TBT на слабых устройствах).
+const DishSheet = dynamic(
+  () => import("@/features/dish-sheet").then((m) => m.DishSheet),
+  { ssr: false },
+);
 
 const ALL_CATEGORY = "all";
 
