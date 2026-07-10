@@ -1,0 +1,243 @@
+{
+  "cafeName": "Апорт",
+  "categories": [
+    {
+      "slug": "breakfasts",
+      "name": "Завтраки",
+      "emoji": "🍳",
+      "items": [
+        {
+          "slug": "syrniki-so-smetanoy",
+          "name": "Сырники со сметаной",
+          "description": "Пышные, из фермерского творога, с румяной корочкой. Подаём со сметаной и домашним абрикосовым вареньем.",
+          "priceKzt": 2400,
+          "imageUrl": "https://images.unsplash.com/photo-1756382713817-1105baceb5df?w=800&q=80"
+        },
+        {
+          "slug": "ovsyanaya-kasha",
+          "name": "Овсяная каша на кокосовом молоке",
+          "description": "Томлёная овсянка с карамелизированным бананом и хрустящим миндалём. Согревает лучше пледа.",
+          "priceKzt": 1850,
+          "imageUrl": "https://images.unsplash.com/photo-1533910534207-90f31029a78e?w=800&q=80"
+        },
+        {
+          "slug": "pankeyki-s-bananom",
+          "name": "Панкейки с бананом и карамелью",
+          "description": "Стопка воздушных панкейков, солёная карамель и свежий банан. Сироп стекает по краям — без ложки не обойтись.",
+          "priceKzt": 2500,
+          "imageUrl": "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=80"
+        },
+        {
+          "slug": "shakshuka",
+          "name": "Шакшука",
+          "description": "Яйца, томлённые в пряном томатном соусе с паприкой и кинзой. Приносим прямо в сковороде, с тёплой лепёшкой.",
+          "priceKzt": 2700,
+          "imageUrl": "https://images.unsplash.com/photo-1520218576172-c1a2df3fa5fc?w=800&q=80"
+        },
+        {
+          "slug": "tost-s-avokado",
+          "name": "Тост с авокадо и яйцом пашот",
+          "description": "Хрустящий злаковый хлеб, спелый авокадо и яйцо с жидким желтком. Сверху — хлопья чили и микрозелень.",
+          "priceKzt": 2900,
+          "imageUrl": "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=80"
+        },
+        {
+          "slug": "frantsuzskie-tosty",
+          "name": "Французские тосты с ягодами",
+          "description": "Бриошь в ванильном кляре, свежие ягоды и сахарная пудра. По утрам исчезают первыми.",
+          "priceKzt": 2600,
+          "imageUrl": "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&q=80"
+        },
+        {
+          "slug": "granola-s-yogurtom",
+          "name": "Гранола с йогуртом и фруктами",
+          "description": "Домашняя гранола на меду, греческий йогурт и сезонные фрукты. Хрустит честно.",
+          "priceKzt": 2200,
+          "imageUrl": "https://images.unsplash.com/photo-1484980972926-edee96e0960d?w=800&q=80"
+        },
+        {
+          "slug": "zavtrak-aport",
+          "name": "Большой завтрак «Апорт»",
+          "description": "Глазунья из трёх яиц, куриные колбаски, обжаренные томаты и тосты. Для тех, у кого день начинается всерьёз.",
+          "priceKzt": 3450,
+          "imageUrl": "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=800&q=80"
+        }
+      ]
+    },
+    {
+      "slug": "mains",
+      "name": "Основные блюда",
+      "emoji": "🥘",
+      "items": [
+        {
+          "slug": "plov-s-govyadinoy",
+          "name": "Плов с говядиной",
+          "description": "Рассыпчатый рис, томлёная говядина, жёлтая морковь и целая головка чеснока. Готовим в казане, как положено.",
+          "priceKzt": 3200,
+          "imageUrl": "https://images.unsplash.com/photo-1671048116810-6f885b2b35a5?w=800&q=80"
+        },
+        {
+          "slug": "burger-aport",
+          "name": "Бургер «Апорт» с фри",
+          "description": "Котлета из мраморной говядины, чеддер, карамелизированный лук и фирменный соус. Салфеток понадобится много.",
+          "priceKzt": 3400,
+          "imageUrl": "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=800&q=80"
+        },
+        {
+          "slug": "pasta-strachatella",
+          "name": "Паста с томатами и страчателлой",
+          "description": "Печёные томаты, сливочная страчателла и свежий базилик. Соус собираем в сковороде, никаких заготовок.",
+          "priceKzt": 3300,
+          "imageUrl": "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=80"
+        },
+        {
+          "slug": "steyk-s-kartofelem",
+          "name": "Стейк с печёным картофелем",
+          "description": "Говядина зернового откорма, прожарка на ваш вкус, перечный соус. Отдыхает пять минут — и на стол.",
+          "priceKzt": 4900,
+          "imageUrl": "https://images.unsplash.com/photo-1600891964092-4316c288032e?w=800&q=80"
+        },
+        {
+          "slug": "losos-na-grile",
+          "name": "Лосось на гриле с овощами",
+          "description": "Филе с хрустящей корочкой, овощи гриль и лимонное масло. Легко, но сытно.",
+          "priceKzt": 4700,
+          "imageUrl": "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800&q=80"
+        },
+        {
+          "slug": "ramen-s-kuritsey",
+          "name": "Рамен с курицей",
+          "description": "Наваристый бульон, упругая пшеничная лапша, маринованное яйцо и зелёный лук. Хлюпать не стесняйтесь.",
+          "priceKzt": 2950,
+          "imageUrl": "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=800&q=80"
+        },
+        {
+          "slug": "boul-s-kuritsey",
+          "name": "Боул с курицей и киноа",
+          "description": "Запечённая курица, киноа, авокадо, нут и тахини-соус. Обед, после которого не тянет в сон.",
+          "priceKzt": 2800,
+          "imageUrl": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80"
+        }
+      ]
+    },
+    {
+      "slug": "desserts",
+      "name": "Десерты",
+      "emoji": "🍰",
+      "items": [
+        {
+          "slug": "tiramisu",
+          "name": "Тирамису",
+          "description": "Классика с маскарпоне и савоярди, пропитанными эспрессо. Какао не жалеем.",
+          "priceKzt": 2300,
+          "imageUrl": "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=800&q=80"
+        },
+        {
+          "slug": "medovik",
+          "name": "Медовик",
+          "description": "Тонкие медовые коржи и сметанный крем — рецепт не меняли лет тридцать. Тает, не дожидаясь вилки.",
+          "priceKzt": 1900,
+          "imageUrl": "https://images.unsplash.com/photo-1624000961428-eeece184988b?w=800&q=80"
+        },
+        {
+          "slug": "chizkeyk-chernika",
+          "name": "Чизкейк с черничным соусом",
+          "description": "Сливочный, на песочной основе, с щедрой порцией черники. Кофе к нему просится сам.",
+          "priceKzt": 2200,
+          "imageUrl": "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=800&q=80"
+        },
+        {
+          "slug": "panna-kotta",
+          "name": "Панна-котта с ягодами",
+          "description": "Дрожит, как положено. Нежные сливки, ваниль и соус из свежих ягод.",
+          "priceKzt": 1800,
+          "imageUrl": "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=800&q=80"
+        },
+        {
+          "slug": "shokoladny-tort",
+          "name": "Шоколадный торт",
+          "description": "Влажный бисквит и ганаш из тёмного шоколада. Для тех, кто не разменивается на «лёгкие» десерты.",
+          "priceKzt": 2400,
+          "imageUrl": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&q=80"
+        },
+        {
+          "slug": "yagodny-tart",
+          "name": "Ягодный тарт",
+          "description": "Хрустящее песочное тесто, заварной крем и горка свежих ягод сверху.",
+          "priceKzt": 2100,
+          "imageUrl": "https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?w=800&q=80"
+        },
+        {
+          "slug": "plombir-karamel",
+          "name": "Пломбир с солёной карамелью",
+          "description": "Три шарика пломбира, тёплая карамель, жареный фундук и вафельная крошка. Детство, но по-взрослому.",
+          "priceKzt": 1650,
+          "imageUrl": "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&q=80"
+        }
+      ]
+    },
+    {
+      "slug": "drinks",
+      "name": "Напитки",
+      "emoji": "☕",
+      "items": [
+        {
+          "slug": "espresso",
+          "name": "Эспрессо",
+          "description": "Плотный шот на зерне свежей обжарки. Короткий и по делу.",
+          "priceKzt": 950,
+          "imageUrl": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80"
+        },
+        {
+          "slug": "kapuchino",
+          "name": "Капучино",
+          "description": "Эспрессо и шелковистая молочная пена. Зерно обжариваем здесь, в Алматы.",
+          "priceKzt": 1300,
+          "imageUrl": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=80"
+        },
+        {
+          "slug": "raf-vanilny",
+          "name": "Раф ванильный",
+          "description": "Сливочный, с натуральной ванилью. Тот случай, когда кофе — уже десерт.",
+          "priceKzt": 1600,
+          "imageUrl": "https://images.unsplash.com/photo-1541167760496-1628856ab772?w=800&q=80"
+        },
+        {
+          "slug": "matcha-latte",
+          "name": "Матча-латте",
+          "description": "Японская матча на овсяном молоке. Бодрит без дрожи в руках.",
+          "priceKzt": 1800,
+          "imageUrl": "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=800&q=80"
+        },
+        {
+          "slug": "chay-s-chabretsom",
+          "name": "Чай с горным чабрецом",
+          "description": "Чайник чёрного чая с чабрецом с предгорий Заилийского Алатау и мёдом. На двоих хватит.",
+          "priceKzt": 1500,
+          "imageUrl": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&q=80"
+        },
+        {
+          "slug": "oblepikhovy-chay",
+          "name": "Облепиховый чай",
+          "description": "Ягоды облепихи, апельсин, имбирь и мёд. Кисло-сладкий, пряный, разлетается в любую погоду.",
+          "priceKzt": 1900,
+          "imageUrl": "https://images.unsplash.com/photo-1605724841466-4b59296daf23?w=800&q=80"
+        },
+        {
+          "slug": "tsitrusovy-limonad",
+          "name": "Цитрусовый лимонад",
+          "description": "Апельсин, лимон, содовая и много льда. Никаких сиропов из бутылки.",
+          "priceKzt": 1400,
+          "imageUrl": "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=800&q=80"
+        },
+        {
+          "slug": "myatny-limonad",
+          "name": "Мятный лимонад с лаймом",
+          "description": "Лайм, свежая мята и тростниковый сахар с содовой. Освежает, как ветер с гор.",
+          "priceKzt": 1450,
+          "imageUrl": "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=800&q=80"
+        }
+      ]
+    }
+  ]
+}

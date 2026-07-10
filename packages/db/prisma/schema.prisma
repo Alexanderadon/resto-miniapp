@@ -1,0 +1,157 @@
+// Prisma 7: генератор prisma-client (ESM) + driver adapter @prisma/adapter-pg
+// (GA в v7, previewFeatures не требуется). Рантайм-подключение — в src/index.ts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Enums ────────────────────────────────────────────────────────────────
+
+enum OrderStatus {
+  /// STRIPE-заказ до подтверждения оплаты: не виден кухне, не шлёт уведомлений
+  PENDING_PAYMENT
+  NEW
+  CONFIRMED
+  COOKING
+  READY
+  DONE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  STRIPE
+}
+
+// ── Меню ─────────────────────────────────────────────────────────────────
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  emoji     String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items MenuItem[]
+
+  @@index([isActive, sortOrder])
+  @@map("categories")
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  categoryId  String
+  slug        String   @unique
+  name        String
+  description String?
+  imageUrl    String?
+  /// Цена в тенге, целое число (тиын в рознице не используется)
+  priceTenge  Int
+  sortOrder   Int      @default(0)
+  isAvailable Boolean  @default(true)
+  /// Идентификатор блюда во внешней POS (iiko), для v1 — null
+  externalId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category   Category    @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+  favorites  Favorite[]
+
+  @@index([categoryId, isAvailable, sortOrder])
+  @@map("menu_items")
+}
+
+// ── Заказы ───────────────────────────────────────────────────────────────
+
+model Order {
+  id           String @id @default(cuid())
+  /// Человекочитаемый номер для чека и чата («Заказ №142»)
+  publicNumber Int    @unique @default(autoincrement())
+
+  /// Ключ идемпотентности: клиент генерирует uuid при открытии checkout,
+  /// повторный сабмит (ретрай сети, переоткрытый webview) возвращает
+  /// существующий заказ вместо дубля (P2002).
+  idempotencyKey String @unique
+
+  // Клиент. identity — из серверной сессии, не из формы.
+  // tgUserId — String: Telegram id влезает в Number, но BigInt ломает
+  // JSON-сериализацию (JWT claims, RSC props), а арифметика не нужна.
+  tgUserId     String
+  customerName String
+  phone        String
+
+  pickupTime DateTime
+  comment    String?
+
+  paymentMethod   PaymentMethod
+  status          OrderStatus   @default(NEW)
+  /// Итог в тенге, пересчитан на сервере из цен БД на момент заказа
+  totalTenge      Int
+  stripeSessionId String?       @unique
+  /// Номер заказа во внешней POS (iiko) после успешного push
+  iikoExternalId  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items OrderItem[]
+
+  @@index([status, createdAt])
+  @@index([tgUserId, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  /// Nullable + SetNull: удаление позиции из меню не трогает историю заказов
+  menuItemId String?
+
+  /// Снапшоты на момент заказа — история неизменна при правках меню
+  nameSnapshot  String
+  /// Цена за единицу в тенге на момент заказа
+  priceSnapshot Int
+  quantity      Int
+
+  order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// ── Избранное (v1) ───────────────────────────────────────────────────────
+
+model Favorite {
+  tgUserId   String
+  menuItemId String
+  createdAt  DateTime @default(now())
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@id([tgUserId, menuItemId])
+  @@index([tgUserId])
+  @@map("favorites")
+}
+
+// ── Идемпотентность Telegram webhook ─────────────────────────────────────
+
+/// Telegram ретраит недоставленные update — фиксируем обработанные update_id.
+/// Запись создаётся ПОСЛЕ успешной обработки: редкий дубль /start-приветствия
+/// безопаснее, чем «съеденный» ретрай при упавшей обработке.
+model ProcessedUpdate {
+  updateId    BigInt   @id
+  processedAt DateTime @default(now())
+
+  @@index([processedAt]) // для периодической чистки старых записей
+  @@map("processed_updates")
+}
