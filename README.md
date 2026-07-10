@@ -7,6 +7,10 @@
 **Стек:** Next.js 16 (App Router, RSC + Server Actions) · TypeScript strict · Turborepo + pnpm · Tailwind CSS v4 · Prisma 7 + Postgres · Telegram Bot API + Mini Apps · Zod · Vitest · Vercel
 
 <p align="center">
+  <img src="docs/screenshots/flow.gif" alt="Полный флоу заказа: каталог → корзина → оформление → заказ" width="300">
+</p>
+
+<p align="center">
   <img src="docs/screenshots/catalog.png" alt="Каталог меню" width="195">
   <img src="docs/screenshots/cart.png" alt="Корзина" width="195">
   <img src="docs/screenshots/checkout.png" alt="Оформление заказа" width="195">
