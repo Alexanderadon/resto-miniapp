@@ -4,7 +4,7 @@
 
 **Live:** [resto-miniapp.vercel.app](https://resto-miniapp.vercel.app) (веб-превью; полный опыт — внутри Telegram)
 
-**Стек:** Next.js 16 (App Router, RSC + Server Actions) · TypeScript strict · Turborepo + pnpm · Tailwind CSS v4 · Prisma 7 + Postgres · Telegram Bot API + Mini Apps · Zod · Vitest · Vercel
+**Стек:** Next.js 16 (App Router, RSC + Server Actions) · TypeScript strict · Turborepo + pnpm · Tailwind CSS v4 · Prisma 7 + Postgres · Telegram Bot API + Mini Apps · Stripe Checkout · Zod · Vitest · Vercel
 
 <p align="center">
   <img src="docs/screenshots/flow.gif" alt="Полный флоу заказа: каталог → корзина → оформление → заказ" width="300">
@@ -43,7 +43,8 @@ apps/miniapp (Next.js 16, Vercel)
 
 - **Auth без паролей.** `initData` из Telegram валидируется на сервере ровно один раз (HMAC-SHA256, `timingSafeEqual`, TTL 5 минут) и обменивается на JWT-cookie со sliding-refresh. Каждый Server Action берёт identity из сессии, а не из формы.
 - **Ценам клиента не доверяем.** Заказ создаётся в одной транзакции: цены перечитываются из БД по id, позиции снапшотятся (`nameSnapshot`, `priceSnapshot`), сумма сверяется с той, что видел пользователь (`PRICE_CHANGED`, если ресторан успел поднять цены).
-- **Идемпотентность на всех границах.** Дабл-сабмит заказа гасится уникальным `idempotencyKey`, повторные доставки Telegram-webhook — таблицей `processed_updates`, гонка лимита активных заказов — serializable-транзакцией.
+- **Идемпотентность на всех границах.** Дабл-сабмит заказа гасится уникальным `idempotencyKey`, повторные доставки Telegram-webhook — таблицей `processed_updates`, Stripe-события — атомарным переходом статуса, гонка лимита активных заказов — serializable-транзакцией.
+- **Оплата картой — Stripe Checkout (test mode).** Заказ до оплаты живёт в статусе `PENDING_PAYMENT` и не виден кухне; активацию делает webhook с проверкой подписи по raw-телу и сверкой суммы. Наличные работают без Stripe.
 - **Дизайн-система на токенах.** Tailwind v4 CSS-first: палитра, радиусы, тени и типографика объявлены в `@theme`, тёмная тема наследует `themeParams` Telegram. Никаких UI-китов — свои 18 компонентов в `packages/ui`.
 - **Все состояния экранов.** Skeleton-лоадеры, пустые состояния, ошибки сети, оффлайн-баннер, haptic feedback через Mini Apps SDK.
 

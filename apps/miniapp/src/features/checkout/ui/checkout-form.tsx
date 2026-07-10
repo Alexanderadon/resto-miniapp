@@ -46,7 +46,7 @@ export function CheckoutForm({ initialName }: { initialName: string }) {
   const [phoneDigits, setPhoneDigits] = useState("");
   const [slots, setSlots] = useState<SlotGeneration | null>(null);
   const [slotIso, setSlotIso] = useState<string | null>(null);
-  const [payment, setPayment] = useState<"CASH">("CASH");
+  const [payment, setPayment] = useState<"CASH" | "STRIPE">("CASH");
   const [comment, setComment] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -169,6 +169,13 @@ export function CheckoutForm({ initialName }: { initialName: string }) {
         } catch {
           // не критично
         }
+        // STRIPE: корзину НЕ чистим (оплату могут отменить и вернуться) —
+        // её очистит страница заказа после успешной оплаты (?paid=1).
+        if (result.checkoutUrl) {
+          haptic.impact("medium");
+          window.location.assign(result.checkoutUrl);
+          return;
+        }
         clearCart();
         haptic.notification("success");
         router.push(`/order/${result.orderId}`);
@@ -273,15 +280,14 @@ export function CheckoutForm({ initialName }: { initialName: string }) {
             value={payment}
             onChange={(value: string) => {
               haptic.selection();
-              if (value === "CASH") setPayment("CASH");
+              if (value === "CASH" || value === "STRIPE") setPayment(value);
             }}
             options={[
               { value: "CASH", label: "Наличными при получении" },
               {
                 value: "STRIPE",
                 label: "Картой онлайн",
-                disabled: true,
-                description: "Скоро",
+                description: "Оплата на защищённой странице Stripe",
               },
             ]}
           />
@@ -328,7 +334,11 @@ export function CheckoutForm({ initialName }: { initialName: string }) {
           loading={isPending}
           disabled={isPending || items.length === 0}
         >
-          {isPending ? "Отправляем…" : `Заказать ・ ${formatTenge(total)}`}
+          {isPending
+            ? "Отправляем…"
+            : payment === "STRIPE"
+              ? `Перейти к оплате ・ ${formatTenge(total)}`
+              : `Заказать ・ ${formatTenge(total)}`}
         </Button>
       </div>
     </form>

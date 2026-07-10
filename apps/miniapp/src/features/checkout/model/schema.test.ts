@@ -168,10 +168,18 @@ describe("createOrderInputSchema", () => {
   });
 
   describe("прочие поля", () => {
-    it("paymentMethod, отличный от CASH, отклоняется (v1 — только наличные)", () => {
+    it("paymentMethod STRIPE принимается (оплата картой онлайн)", () => {
       const result = createOrderInputSchema.safeParse({
         ...validInput(),
         paymentMethod: "STRIPE",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("неизвестный paymentMethod отклоняется", () => {
+      const result = createOrderInputSchema.safeParse({
+        ...validInput(),
+        paymentMethod: "CRYPTO",
       });
       expect(result.success).toBe(false);
     });

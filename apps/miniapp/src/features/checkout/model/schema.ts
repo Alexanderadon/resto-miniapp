@@ -38,8 +38,8 @@ export const createOrderInputSchema = z.object({
   phone: phoneE164Schema,
   pickupTimeIso: z.iso.datetime(),
   comment: commentSchema.optional(),
-  /** В v1 доступна только оплата наличными; STRIPE — следующая итерация */
-  paymentMethod: z.literal("CASH"),
+  /** CASH — заказ активен сразу; STRIPE — активируется после оплаты (webhook) */
+  paymentMethod: z.enum(["CASH", "STRIPE"]),
   /** Итог, который видел клиент; при расхождении с пересчётом из БД — PRICE_CHANGED */
   expectedTotalTenge: z.number().int().positive().optional(),
   items: z
@@ -65,7 +65,13 @@ export type CreateOrderErrorCode =
   | "INTERNAL";
 
 export type CreateOrderResult =
-  | { ok: true; orderId: string; publicNumber: number }
+  | {
+      ok: true;
+      orderId: string;
+      publicNumber: number;
+      /** Для STRIPE — URL страницы оплаты Stripe Checkout (редирект клиентом) */
+      checkoutUrl?: string;
+    }
   | {
       ok: false;
       code: CreateOrderErrorCode;

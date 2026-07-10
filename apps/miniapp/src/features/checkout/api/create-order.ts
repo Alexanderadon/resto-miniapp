@@ -7,11 +7,10 @@
 
 import { after } from "next/server";
 import { OrderStatus, Prisma, prisma } from "@repo/db";
-import { getOrderProvider, type OrderPayload } from "@repo/iiko-adapter";
 import { formatTenge } from "@repo/ui";
 import { requireSession } from "@/shared/session";
-import { sendMessage } from "@/shared/telegram/bot-api";
-import { formatPickupTime } from "../lib/datetime";
+import { getStripe } from "@/shared/stripe/client";
+import { runOrderSideEffects } from "./order-side-effects";
 import {
   MAX_ORDER_ITEM_QUANTITY,
   MAX_PICKUP_AHEAD_MS,
@@ -156,7 +155,7 @@ export async function createOrder(
   }
 
   try {
-    const { order, menuById } = await prisma.$transaction(async (tx) => {
+    const { order } = await prisma.$transaction(async (tx) => {
       // Актуальные позиции: только существующие и доступные.
       const menuItems: MenuItemSnapshot[] = await tx.menuItem.findMany({
         where: { id: { in: requestedIds }, isAvailable: true },
@@ -208,7 +207,12 @@ export async function createOrder(
           pickupTime,
           comment: input.comment || null,
           paymentMethod: input.paymentMethod,
-          status: OrderStatus.NEW,
+          // STRIPE-заказ не виден кухне и не шлёт уведомлений, пока
+          // webhook не подтвердит оплату (PENDING_PAYMENT → NEW).
+          status:
+            input.paymentMethod === "STRIPE"
+              ? OrderStatus.PENDING_PAYMENT
+              : OrderStatus.NEW,
           totalTenge,
           items: {
             create: requested.map((item) => ({
@@ -237,9 +241,33 @@ export async function createOrder(
       isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
     });
 
-    // 6. Побочные эффекты после коммита — ответ клиенту не блокируют,
+    // 6a. STRIPE: создаём Checkout-сессию; заказ активируется webhook'ом
+    // после оплаты. Сессия не создалась — заказ отменяем, юзеру ошибка.
+    if (input.paymentMethod === "STRIPE") {
+      const checkoutUrl = await createStripeCheckout(order);
+      if (!checkoutUrl) {
+        await prisma.order.updateMany({
+          where: { id: order.id, status: OrderStatus.PENDING_PAYMENT },
+          data: { status: OrderStatus.CANCELLED },
+        });
+        return {
+          ok: false,
+          code: "INTERNAL",
+          message:
+            "Не удалось открыть оплату картой — попробуйте ещё раз или выберите наличные",
+        };
+      }
+      return {
+        ok: true,
+        orderId: order.id,
+        publicNumber: order.publicNumber,
+        checkoutUrl,
+      };
+    }
+
+    // 6b. CASH: побочные эффекты после коммита — ответ клиенту не блокируют,
     // их сбой заказ не откатывает.
-    scheduleSideEffects(order, requested, menuById, tgUserId);
+    after(() => runOrderSideEffects(order.id));
 
     return { ok: true, orderId: order.id, publicNumber: order.publicNumber };
   } catch (error) {
@@ -278,13 +306,37 @@ export async function createOrder(
       // tgUserId в фильтре: чужой заказ с совпавшим ключом не отдаём как свой.
       const existing = await prisma.order.findFirst({
         where: { idempotencyKey: input.idempotencyKey, tgUserId },
-        select: { id: true, publicNumber: true },
+        select: {
+          id: true,
+          publicNumber: true,
+          status: true,
+          stripeSessionId: true,
+        },
       });
       if (existing) {
+        // Ретрай STRIPE-заказа: отдаём ссылку на ту же (ещё открытую) сессию.
+        let checkoutUrl: string | undefined;
+        if (
+          existing.status === OrderStatus.PENDING_PAYMENT &&
+          existing.stripeSessionId
+        ) {
+          try {
+            const session = await getStripe().checkout.sessions.retrieve(
+              existing.stripeSessionId,
+            );
+            if (session.status === "open" && session.url) {
+              checkoutUrl = session.url;
+            }
+          } catch {
+            // Сессию не достали — вернём заказ без ссылки, оплатить можно
+            // со страницы заказа.
+          }
+        }
         return {
           ok: true,
           orderId: existing.id,
           publicNumber: existing.publicNumber,
+          checkoutUrl,
         };
       }
     }
@@ -312,93 +364,56 @@ export async function createOrder(
   }
 }
 
-// ── Побочные эффекты (вне транзакции) ────────────────────────────────────
+// ── Stripe Checkout (вне транзакции) ─────────────────────────────────────
 
-function scheduleSideEffects(
-  order: CreatedOrder,
-  requested: { menuItemId: string; quantity: number }[],
-  menuById: Map<string, MenuItemSnapshot>,
-  tgUserId: string,
-): void {
-  after(async () => {
-    await pushOrderToPos(order, requested, menuById);
-    await sendReceiptToChat(order, requested, menuById, tgUserId);
-  });
-}
+/** Сессия должна жить недолго: неоплаченный заказ не висит вечно.
+ *  30 минут — минимум, который позволяет Stripe. */
+const CHECKOUT_TTL_SECONDS = 30 * 60;
 
-async function pushOrderToPos(
-  order: CreatedOrder,
-  requested: { menuItemId: string; quantity: number }[],
-  menuById: Map<string, MenuItemSnapshot>,
-): Promise<void> {
-  const payload: OrderPayload = {
-    orderId: order.id,
-    publicNumber: order.publicNumber,
-    customerName: order.customerName,
-    phone: order.phone,
-    pickupTime: order.pickupTime.toISOString(),
-    comment: order.comment ?? undefined,
-    paymentMethod: "CASH",
-    items: requested.map((item) => {
-      const menu = menuById.get(item.menuItemId)!;
-      return {
-        externalId: menu.externalId,
-        name: menu.name,
-        quantity: item.quantity,
-        priceTenge: menu.priceTenge,
-      };
-    }),
-    totalTenge: order.totalTenge,
-  };
-
+/**
+ * Создаёт Checkout-сессию по СНАПШОТАМ заказа (цены уже зафиксированы
+ * транзакцией) и записывает session.id в заказ. null — сессия не создалась.
+ */
+async function createStripeCheckout(order: CreatedOrder): Promise<string | null> {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://resto-miniapp.vercel.app";
   try {
-    const result = await getOrderProvider().pushOrder(payload);
-    if (result.ok) {
-      await prisma.order.update({
-        where: { id: order.id },
-        data: { iikoExternalId: result.externalId },
-      });
-    } else {
-      // Заказ остаётся в БД со статусом NEW без externalId —
-      // сигнал персоналу обработать вручную (ADR-001 §6).
-      console.error(
-        `[createOrder] iiko push failed for order ${order.id} #${order.publicNumber}: ` +
-          `${result.error} (retryable=${result.retryable})`,
-      );
-    }
+    const items = await prisma.orderItem.findMany({
+      where: { orderId: order.id },
+      select: { nameSnapshot: true, priceSnapshot: true, quantity: true },
+    });
+
+    const session = await getStripe().checkout.sessions.create({
+      mode: "payment",
+      line_items: items.map((item) => ({
+        quantity: item.quantity,
+        price_data: {
+          currency: "kzt",
+          // KZT в Stripe — валюта с двумя знаками: сумма в тиынах (×100)
+          unit_amount: item.priceSnapshot * 100,
+          product_data: { name: item.nameSnapshot },
+        },
+      })),
+      expires_at: Math.floor(Date.now() / 1000) + CHECKOUT_TTL_SECONDS,
+      success_url: `${appUrl}/order/${order.id}?paid=1`,
+      cancel_url: `${appUrl}/order/${order.id}`,
+      metadata: {
+        orderId: order.id,
+        publicNumber: String(order.publicNumber),
+      },
+    });
+
+    if (!session.url) return null;
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { stripeSessionId: session.id },
+    });
+    return session.url;
   } catch (error) {
-    console.error(`[createOrder] iiko push threw for order ${order.id}`, error);
+    console.error(
+      `[createOrder] stripe checkout create failed for order ${order.id}:`,
+      error instanceof Error ? error.message : String(error),
+    );
+    return null;
   }
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-}
-
-async function sendReceiptToChat(
-  order: CreatedOrder,
-  requested: { menuItemId: string; quantity: number }[],
-  menuById: Map<string, MenuItemSnapshot>,
-  tgUserId: string,
-): Promise<void> {
-  const itemLines = requested.map((item) => {
-    const menu = menuById.get(item.menuItemId)!;
-    return `• ${escapeHtml(menu.name)} × ${item.quantity} — ${formatTenge(menu.priceTenge * item.quantity)}`;
-  });
-
-  const text = [
-    `<b>Заказ №${order.publicNumber} принят ✅</b>`,
-    "",
-    ...itemLines,
-    "",
-    `Итого: <b>${formatTenge(order.totalTenge)}</b>`,
-    `Самовывоз: ${formatPickupTime(order.pickupTime)}`,
-    "Оплата: наличными при получении",
-  ].join("\n");
-
-  // sendMessage не бросает — ошибки логирует сам (контракт №3).
-  await sendMessage(tgUserId, text, { parseMode: "HTML" });
 }

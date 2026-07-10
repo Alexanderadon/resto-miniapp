@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { OrderStatus, prisma } from "@repo/db";
 import { requireSession } from "@/shared/session";
+import { getStripe } from "@/shared/stripe/client";
 
 export type CancelOrderResult =
   | { ok: true }
@@ -26,8 +27,13 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
   }
 
   try {
+    // Отменяемы: NEW (кухня не приняла) и PENDING_PAYMENT (не оплачен).
     const { count } = await prisma.order.updateMany({
-      where: { id: orderId, tgUserId, status: OrderStatus.NEW },
+      where: {
+        id: orderId,
+        tgUserId,
+        status: { in: [OrderStatus.NEW, OrderStatus.PENDING_PAYMENT] },
+      },
       data: { status: OrderStatus.CANCELLED },
     });
     if (count === 0) {
@@ -37,6 +43,21 @@ export async function cancelOrder(orderId: string): Promise<CancelOrderResult> {
         message: "Заказ уже готовится — для отмены позвоните в кафе",
       };
     }
+
+    // Открытую сессию оплаты гасим (best-effort): оплатить отменённый
+    // заказ по старой ссылке нельзя.
+    const cancelled = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { stripeSessionId: true },
+    });
+    if (cancelled?.stripeSessionId) {
+      try {
+        await getStripe().checkout.sessions.expire(cancelled.stripeSessionId);
+      } catch {
+        // уже истекла/оплачена — не критично
+      }
+    }
+
     revalidatePath(`/order/${orderId}`);
     return { ok: true };
   } catch (error) {

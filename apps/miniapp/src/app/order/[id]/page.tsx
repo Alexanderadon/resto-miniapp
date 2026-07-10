@@ -6,10 +6,12 @@ import Link from "next/link";
 import { OrderStatus, prisma } from "@repo/db";
 import { Card, StatusBadge, formatTenge } from "@repo/ui";
 import { requireSession } from "@/shared/session";
+import { getStripe } from "@/shared/stripe/client";
 import { formatPickupTime } from "@/features/checkout";
 import { CancelOrderButton } from "@/features/order-cancel";
 import { RepeatOrderButton, getRepeatableItems } from "@/features/repeat-order";
 import { OrderStatusPoller } from "./order-status-poller";
+import { PaidCartClearer } from "./paid-cart-clearer";
 import { ShowNumberButton } from "./show-number-button";
 
 export const dynamic = "force-dynamic";
@@ -33,10 +35,12 @@ const RESTAURANT_ADDRESS = "Кафе «Апорт» ・ Алматы, ул. Ро
 
 export default async function OrderPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ paid?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, { paid }] = await Promise.all([params, searchParams]);
 
   const session = await requireSession().catch(() => null);
   if (!session) redirect("/");
@@ -49,7 +53,23 @@ export default async function OrderPage({
   if (!order) notFound();
 
   const isCancelled = order.status === OrderStatus.CANCELLED;
+  const isPendingPayment = order.status === OrderStatus.PENDING_PAYMENT;
   const isFinal = order.status === OrderStatus.DONE || isCancelled;
+
+  // Неоплаченный STRIPE-заказ: достаём ссылку на ещё открытую сессию оплаты.
+  let payUrl: string | null = null;
+  if (isPendingPayment && order.stripeSessionId) {
+    try {
+      const stripeSession = await getStripe().checkout.sessions.retrieve(
+        order.stripeSessionId,
+      );
+      if (stripeSession.status === "open" && stripeSession.url) {
+        payUrl = stripeSession.url;
+      }
+    } catch {
+      // Сессию не достали — покажем заказ без кнопки оплаты.
+    }
+  }
 
   // Позиции заказа, сверенные с текущим меню (цены/доступность из БД).
   const repeatableItems = await getRepeatableItems(order.items);
@@ -58,9 +78,15 @@ export default async function OrderPage({
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center px-4 pt-10 pb-safe-4">
       <style>{`@keyframes order-check-in{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}`}</style>
 
+      {paid === "1" && !isPendingPayment && <PaidCartClearer />}
+
       <div
         className={`flex h-16 w-16 items-center justify-center rounded-full ${
-          isCancelled ? "bg-danger-soft text-danger" : "bg-success-soft text-success"
+          isCancelled
+            ? "bg-danger-soft text-danger"
+            : isPendingPayment
+              ? "bg-brand-soft text-brand"
+              : "bg-success-soft text-success"
         }`}
         style={{ animation: "order-check-in 300ms ease-out both" }}
       >
@@ -71,6 +97,14 @@ export default async function OrderPage({
               stroke="currentColor"
               strokeWidth="3"
               strokeLinecap="round"
+            />
+          ) : isPendingPayment ? (
+            <path
+              d="M14 7v7l4.5 3"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
           ) : (
             <path
@@ -85,7 +119,11 @@ export default async function OrderPage({
       </div>
 
       <h1 className="mt-4 text-title text-ink">
-        {isCancelled ? "Заказ отменён" : "Заказ принят!"}
+        {isCancelled
+          ? "Заказ отменён"
+          : isPendingPayment
+            ? "Осталось оплатить"
+            : "Заказ принят!"}
       </h1>
       <p className="mt-1 text-4xl font-bold text-ink" data-numeric>
         № {order.publicNumber}
@@ -150,9 +188,26 @@ export default async function OrderPage({
       <OrderStatusPoller status={order.status} active={!isFinal} />
 
       <div className="mt-8 w-full space-y-3">
+        {isPendingPayment && payUrl && (
+          <a
+            href={payUrl}
+            className="tap-target flex w-full items-center justify-center rounded-button bg-brand px-4 py-3 font-semibold text-on-brand active:bg-brand-press"
+          >
+            Оплатить ・ {formatTenge(order.totalTenge)}
+          </a>
+        )}
+        {isPendingPayment && !payUrl && (
+          <p className="text-center text-caption text-muted">
+            Сессия оплаты истекла — заказ скоро отменится, оформите новый
+          </p>
+        )}
         <Link
           href="/"
-          className="tap-target flex w-full items-center justify-center rounded-button bg-brand px-4 py-3 font-semibold text-on-brand active:bg-brand-press"
+          className={`tap-target flex w-full items-center justify-center rounded-button px-4 py-3 font-semibold ${
+            isPendingPayment && payUrl
+              ? "border border-line bg-surface text-ink"
+              : "bg-brand text-on-brand active:bg-brand-press"
+          }`}
         >
           Вернуться в меню
         </Link>
@@ -168,7 +223,7 @@ export default async function OrderPage({
             Мои заказы
           </Link>
         </div>
-        {order.status === OrderStatus.NEW && (
+        {(order.status === OrderStatus.NEW || isPendingPayment) && (
           <CancelOrderButton orderId={order.id} />
         )}
       </div>
