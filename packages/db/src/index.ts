@@ -14,11 +14,23 @@ function createClient(): PrismaClient {
   return new PrismaClient({ adapter });
 }
 
-export const prisma: PrismaClient = globalForPrisma.prisma ?? createClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+function getClient(): PrismaClient {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createClient();
+  }
+  return globalForPrisma.prisma;
 }
+
+// Ленивая инициализация: `next build` импортирует модули роутов при сборке
+// страниц (collecting page data) без DATABASE_URL — клиент не должен
+// создаваться раньше первого реального обращения к БД в рантайме.
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getClient();
+    const value = Reflect.get(client, prop, client);
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+});
 
 export { OrderStatus, PaymentMethod } from "./generated/prisma/enums.ts";
 export type {
