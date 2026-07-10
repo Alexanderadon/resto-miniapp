@@ -16,3 +16,4 @@ export { Spinner, type SpinnerProps } from "./Spinner";
 export { StatusBadge, type OrderStatusValue, type StatusBadgeProps } from "./StatusBadge";
 export { Stepper, type StepperProps } from "./Stepper";
 export { Textarea, type TextareaProps } from "./Textarea";
+export { useDragScroll } from "./useDragScroll";

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { KeyboardEvent } from "react";
 import { cn } from "./cn";
+import { useDragScroll } from "./useDragScroll";
 
 export interface ChipTab<T extends string> {
   value: T;
@@ -31,6 +32,7 @@ export function ChipTabs<T extends string>({
   "aria-label": ariaLabel,
 }: ChipTabsProps<T>) {
   const buttonRefs = useRef(new Map<T, HTMLButtonElement>());
+  const drag = useDragScroll<HTMLDivElement>();
 
   // Активный чипс подъезжает в видимую область
   useEffect(() => {
@@ -61,7 +63,12 @@ export function ChipTabs<T extends string>({
       role="tablist"
       aria-label={ariaLabel ?? "Категории"}
       onKeyDown={handleKeyDown}
-      className={cn("flex gap-2 overflow-x-auto px-4 py-1 scrollbar-none", className)}
+      ref={drag.ref}
+      {...drag.handlers}
+      className={cn(
+        "flex cursor-grab gap-2 overflow-x-auto px-4 py-1 select-none scrollbar-none",
+        className,
+      )}
     >
       {tabs.map((tab) => {
         const active = tab.value === value;

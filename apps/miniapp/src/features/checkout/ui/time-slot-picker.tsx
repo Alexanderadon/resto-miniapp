@@ -3,6 +3,7 @@
 // Горизонтальные чипсы-слоты времени самовывоза (ui-spec §4).
 // generation === null → слоты ещё генерируются (после маунта) → скелетоны.
 
+import { useDragScroll } from "@repo/ui";
 import { haptic } from "@/shared/lib/haptics";
 import type { SlotGeneration } from "../lib/time-slots";
 
@@ -21,6 +22,8 @@ export function TimeSlotPicker({
   error,
   disabled,
 }: Props) {
+  const drag = useDragScroll<HTMLDivElement>();
+
   if (!generation) {
     return (
       <div className="flex gap-2 py-1" aria-hidden>
@@ -41,7 +44,9 @@ export function TimeSlotPicker({
       <div
         role="radiogroup"
         aria-label="Время самовывоза"
-        className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 scrollbar-none"
+        ref={drag.ref}
+        {...drag.handlers}
+        className="-mx-4 flex cursor-grab gap-2 overflow-x-auto px-4 py-1 select-none scrollbar-none"
       >
         {generation.slots.map((slot) => {
           const active = slot.iso === value;
