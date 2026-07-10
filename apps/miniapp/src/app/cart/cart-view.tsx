@@ -69,12 +69,20 @@ export function CartView() {
             title="В корзине пусто"
             description="Загляните в меню — там вкусно"
             action={
-              <Link
-                href="/"
-                className="tap-target inline-flex items-center justify-center rounded-button bg-brand px-6 py-3 font-semibold text-on-brand active:bg-brand-press"
-              >
-                В меню
-              </Link>
+              <div className="flex flex-col items-center gap-1">
+                <Link
+                  href="/"
+                  className="tap-target inline-flex items-center justify-center rounded-button bg-brand px-6 py-3 font-semibold text-on-brand active:bg-brand-press"
+                >
+                  В меню
+                </Link>
+                <Link
+                  href="/orders"
+                  className="tap-target inline-flex items-center justify-center px-6 text-sm font-medium text-link"
+                >
+                  Мои заказы
+                </Link>
+              </div>
             }
           />
         </div>

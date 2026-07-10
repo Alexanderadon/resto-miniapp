@@ -8,6 +8,7 @@ import { Card, StatusBadge, formatTenge } from "@repo/ui";
 import { requireSession } from "@/shared/session";
 import { formatPickupTime } from "@/features/checkout";
 import { CancelOrderButton } from "@/features/order-cancel";
+import { RepeatOrderButton, getRepeatableItems } from "@/features/repeat-order";
 import { OrderStatusPoller } from "./order-status-poller";
 import { ShowNumberButton } from "./show-number-button";
 
@@ -49,6 +50,9 @@ export default async function OrderPage({
 
   const isCancelled = order.status === OrderStatus.CANCELLED;
   const isFinal = order.status === OrderStatus.DONE || isCancelled;
+
+  // Позиции заказа, сверенные с текущим меню (цены/доступность из БД).
+  const repeatableItems = await getRepeatableItems(order.items);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center px-4 pt-10 pb-safe-4">
@@ -152,7 +156,18 @@ export default async function OrderPage({
         >
           Вернуться в меню
         </Link>
-        <ShowNumberButton publicNumber={order.publicNumber} />
+        <RepeatOrderButton items={repeatableItems} />
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <ShowNumberButton publicNumber={order.publicNumber} />
+          </div>
+          <Link
+            href="/orders"
+            className="tap-target flex flex-1 items-center justify-center text-center text-sm font-medium text-link"
+          >
+            Мои заказы
+          </Link>
+        </div>
         {order.status === OrderStatus.NEW && (
           <CancelOrderButton orderId={order.id} />
         )}
