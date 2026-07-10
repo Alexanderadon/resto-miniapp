@@ -121,7 +121,9 @@ export function DishSheet({ item, open, onClose }: DishSheetProps) {
             ) : null}
           </div>
 
-          <div className="flex shrink-0 items-center gap-3 border-t border-line bg-surface px-4 pt-3 pb-safe-3">
+          {/* flex-wrap: на узких экранах кнопка с длинной суммой переносится
+              на свою строку вместо обрезания */}
+          <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-line bg-surface px-4 pt-3 pb-safe-3">
             <Stepper
               value={quantity}
               min={1}
@@ -131,7 +133,7 @@ export function DishSheet({ item, open, onClose }: DishSheetProps) {
                 next > quantity ? handleIncrement() : handleDecrement()
               }
             />
-            <Button className="flex-1" onClick={handleConfirm}>
+            <Button className="min-w-[11rem] flex-1" onClick={handleConfirm}>
               {inCart ? "Обновить" : "В корзину"} ・{" "}
               {formatTenge(item.priceTenge * quantity)}
             </Button>

@@ -118,39 +118,46 @@ export function DishCard({
       />
 
       <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-2">
-        <span className="text-price text-ink">{formatTenge(item.priceTenge)}</span>
         {inCart ? (
+          // В корзине степпер занимает весь ряд: на узких экранах (320–360px)
+          // цена + степпер в одну строку не помещаются, «+» обрезался.
           <Stepper
             value={quantity}
             // min=0: минус активен при количестве 1 — декремент удаляет позицию
             min={0}
             max={MAX_ITEM_QUANTITY}
             itemName={item.name}
+            className="w-full justify-between"
             onChange={(next) =>
               next > quantity ? handleIncrement() : handleDecrement()
             }
           />
         ) : (
-          <IconButton
-            aria-label={`Добавить ${item.name}`}
-            onClick={handleAdd}
-            className="bg-brand-soft text-brand"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              aria-hidden="true"
+          <>
+            <span className="text-price text-ink">
+              {formatTenge(item.priceTenge)}
+            </span>
+            <IconButton
+              aria-label={`Добавить ${item.name}`}
+              onClick={handleAdd}
+              className="bg-brand-soft text-brand"
             >
-              <path
-                d="M10 4v12M4 10h12"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </IconButton>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M10 4v12M4 10h12"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </IconButton>
+          </>
         )}
       </div>
     </article>
