@@ -1,0 +1,18 @@
+name: Keepalive
+
+# Supabase Free усыпляет проект после ~недели без обращений к БД.
+# Запрос каталога дважды в день читает меню из Postgres и держит базу активной.
+on:
+  schedule:
+    - cron: "17 5,17 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping catalog (DB-backed page)
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://resto-miniapp.vercel.app/)
+          echo "HTTP $code"
+          test "$code" = "200"
