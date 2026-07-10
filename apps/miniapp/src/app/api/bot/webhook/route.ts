@@ -17,7 +17,10 @@ const updateSchema = z.object({
       text: z.string().optional(),
       chat: z.object({ id: z.union([z.number(), z.string()]) }),
       from: z
-        .object({ first_name: z.string().optional() })
+        .object({
+          id: z.union([z.number(), z.string()]).optional(),
+          first_name: z.string().optional(),
+        })
         .optional(),
     })
     .optional(),
@@ -84,6 +87,10 @@ export async function POST(request: Request) {
       // sendMessage не бросает: ошибка отправки логируется внутри,
       // update при этом считаем обработанным (ретрай приветствия не критичен).
       await sendMessage(message.chat.id, WELCOME_TEXT(message.from?.first_name));
+    } else if (message?.text?.startsWith("/whoami")) {
+      // Диагностика доступа к админке: в личном чате chat.id === id юзера.
+      const tgId = message.from?.id ?? message.chat.id;
+      await sendMessage(message.chat.id, `Ваш Telegram ID: ${tgId}`);
     }
     // Остальные типы сообщений намеренно игнорируем (ADR-001 §5.3).
 
