@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { OfflineBanner } from "@/shared/ui/offline-banner";
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <TelegramInit />
         <OfflineBanner />
         {children}
+        <Analytics />
       </body>
     </html>
   );

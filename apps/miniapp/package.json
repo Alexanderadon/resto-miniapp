@@ -16,6 +16,7 @@
     "@repo/ui": "workspace:*",
     "@telegram-apps/sdk": "3.11.8",
     "@telegram-apps/sdk-react": "3.3.9",
+    "@vercel/analytics": "^2.0.1",
     "jose": "6.2.3",
     "next": "16.2.10",
     "react": "19.2.7",
