@@ -16,6 +16,8 @@ import {
   MAX_ORDER_ITEM_QUANTITY,
   MAX_PICKUP_AHEAD_MS,
   MIN_PICKUP_LEAD_MS,
+  PICKUP_LAST_SLOT_MINUTES,
+  PICKUP_OPEN_MINUTES,
   createOrderInputSchema,
   type CreateOrderInput,
   type CreateOrderResult,
@@ -44,6 +46,13 @@ class TooManyActiveOrdersError extends Error {
   }
 }
 
+class PriceChangedError extends Error {
+  constructor(readonly actualTotalTenge: number) {
+    super("PRICE_CHANGED");
+    this.name = "PriceChangedError";
+  }
+}
+
 class OrderInvariantError extends Error {
   constructor(message: string) {
     super(message);
@@ -67,6 +76,18 @@ type CreatedOrder = {
   comment: string | null;
   totalTenge: number;
 };
+
+/** Минуты от полуночи в Asia/Almaty — серверный TZ может быть любым */
+function minutesOfDayInAlmaty(date: Date): number {
+  const formatted = new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Asia/Almaty",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+  const [hours = 0, minutes = 0] = formatted.split(":").map(Number);
+  return hours * 60 + minutes;
+}
 
 export async function createOrder(
   rawInput: CreateOrderInput,
@@ -120,6 +141,20 @@ export async function createOrder(
     };
   }
 
+  // 4b. Рабочие часы кафе: слот должен попадать в 10:00–21:30 по Алматы.
+  // Клиентские слоты это гарантируют, но входу Action не верим.
+  const almatyMinutes = minutesOfDayInAlmaty(pickupTime);
+  if (
+    almatyMinutes < PICKUP_OPEN_MINUTES ||
+    almatyMinutes > PICKUP_LAST_SLOT_MINUTES
+  ) {
+    return {
+      ok: false,
+      code: "PICKUP_TIME_INVALID",
+      message: "Кафе работает с 10:00 до 21:30 — выберите слот в рабочие часы",
+    };
+  }
+
   try {
     const { order, menuById } = await prisma.$transaction(async (tx) => {
       // Актуальные позиции: только существующие и доступные.
@@ -145,6 +180,15 @@ export async function createOrder(
       );
       if (totalTenge <= 0) {
         throw new OrderInvariantError(`totalTenge=${totalTenge} must be > 0`);
+      }
+
+      // Цена изменилась, пока пользователь оформлял заказ, — не молчим,
+      // а просим подтвердить актуальный итог.
+      if (
+        input.expectedTotalTenge !== undefined &&
+        totalTenge !== input.expectedTotalTenge
+      ) {
+        throw new PriceChangedError(totalTenge);
       }
 
       // Анти-абьюз: не больше 3 активных заказов на пользователя.
@@ -187,6 +231,10 @@ export async function createOrder(
       });
 
       return { order, menuById };
+    }, {
+      // Гонка count→create лимита активных заказов закрывается сериализацией;
+      // конфликт (P2034) обрабатываем ниже.
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
     });
 
     // 6. Побочные эффекты после коммита — ответ клиенту не блокируют,
@@ -203,6 +251,16 @@ export async function createOrder(
         unavailableIds: error.ids,
       };
     }
+    if (error instanceof PriceChangedError) {
+      return {
+        ok: false,
+        code: "PRICE_CHANGED",
+        message:
+          `Цены обновились: итого ${formatTenge(error.actualTotalTenge)}. ` +
+          "Проверьте корзину и подтвердите ещё раз",
+        actualTotalTenge: error.actualTotalTenge,
+      };
+    }
     if (error instanceof TooManyActiveOrdersError) {
       return {
         ok: false,
@@ -217,8 +275,9 @@ export async function createOrder(
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      const existing = await prisma.order.findUnique({
-        where: { idempotencyKey: input.idempotencyKey },
+      // tgUserId в фильтре: чужой заказ с совпавшим ключом не отдаём как свой.
+      const existing = await prisma.order.findFirst({
+        where: { idempotencyKey: input.idempotencyKey, tgUserId },
         select: { id: true, publicNumber: true },
       });
       if (existing) {
@@ -229,8 +288,22 @@ export async function createOrder(
         };
       }
     }
+    // Сбой сериализации Serializable-транзакции — безопасно ретраить.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2034"
+    ) {
+      return {
+        ok: false,
+        code: "CONFLICT",
+        message: "Не удалось оформить заказ, попробуйте ещё раз",
+      };
+    }
 
-    console.error("[createOrder] unexpected failure", error);
+    console.error(
+      "[createOrder] unexpected failure:",
+      error instanceof Error ? error.message : String(error),
+    );
     return {
       ok: false,
       code: "INTERNAL",

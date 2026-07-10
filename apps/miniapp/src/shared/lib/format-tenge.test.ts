@@ -27,7 +27,7 @@ describe("formatTenge", () => {
     const result = formatTenge(24000);
     expect(result).toBe(`24${NNBSP}000${NNBSP}₸`);
     // Обычного пробела (U+0020) и NBSP (U+00A0) быть не должно
-    expect(result).not.toMatch(/[  ]/);
+    expect(result).not.toMatch(/[\u0020\u00A0]/);
   });
 
   it("семизначное число: две группы разрядов", () => {

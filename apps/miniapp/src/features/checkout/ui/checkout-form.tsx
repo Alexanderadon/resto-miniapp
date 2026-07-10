@@ -33,6 +33,11 @@ export function CheckoutForm({ initialName }: { initialName: string }) {
   const router = useRouter();
   const items = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clear);
+  const removeItem = useCartStore((s) => s.remove);
+
+  // До маунта items из persist ещё не совпадают с SSR-разметкой — скелетон.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // Один ключ идемпотентности на маунт формы: ретрай сабмита не создаёт дубль.
   const [idempotencyKey] = useState(() => crypto.randomUUID());
@@ -130,18 +135,29 @@ export function CheckoutForm({ initialName }: { initialName: string }) {
 
     setServerError(null);
     startTransition(async () => {
-      const result = await createOrder({
-        idempotencyKey,
-        customerName: name.trim(),
-        phone: `+7${phoneDigits}`,
-        pickupTimeIso: slotIso!,
-        comment: comment.trim() ? comment.trim() : undefined,
-        paymentMethod: payment,
-        items: items.map((i) => ({
-          menuItemId: i.menuItemId,
-          quantity: i.quantity,
-        })),
-      });
+      let result: Awaited<ReturnType<typeof createOrder>>;
+      try {
+        result = await createOrder({
+          idempotencyKey,
+          customerName: name.trim(),
+          phone: `+7${phoneDigits}`,
+          pickupTimeIso: slotIso!,
+          comment: comment.trim() ? comment.trim() : undefined,
+          paymentMethod: payment,
+          expectedTotalTenge: total,
+          items: items.map((i) => ({
+            menuItemId: i.menuItemId,
+            quantity: i.quantity,
+          })),
+        });
+      } catch {
+        // Сеть/сервер упали до ответа. idempotencyKey делает ретрай безопасным.
+        haptic.notification("error");
+        setServerError(
+          "Не удалось отправить заказ. Проверьте соединение и попробуйте ещё раз",
+        );
+        return;
+      }
 
       if (result.ok) {
         succeededRef.current = true;
@@ -156,6 +172,30 @@ export function CheckoutForm({ initialName }: { initialName: string }) {
         return;
       }
 
+      if (result.code === "ITEMS_UNAVAILABLE") {
+        // Убираем закончившиеся позиции из корзины (имена — ДО удаления),
+        // чтобы ретрай не упирался в ту же ошибку.
+        const unavailable = new Set(result.unavailableIds ?? []);
+        const names = items
+          .filter((i) => unavailable.has(i.menuItemId))
+          .map((i) => `«${i.name}»`);
+        for (const id of unavailable) removeItem(id);
+        haptic.notification("warning");
+        setServerError(
+          names.length > 0
+            ? `Закончились: ${names.join(", ")} — мы убрали их из корзины. Проверьте заказ и подтвердите ещё раз`
+            : result.message,
+        );
+        return;
+      }
+
+      if (result.code === "PRICE_CHANGED") {
+        // Актуальных цен по позициям в ответе нет — показываем новый итог.
+        haptic.notification("warning");
+        setServerError(result.message);
+        return;
+      }
+
       haptic.notification("error");
       if (result.code === "PICKUP_TIME_INVALID") {
         // Слот протух, пока пользователь заполнял форму — перегенерируем.
@@ -165,6 +205,16 @@ export function CheckoutForm({ initialName }: { initialName: string }) {
       }
       setServerError(result.message);
     });
+  }
+
+  if (!mounted) {
+    return (
+      <div className="flex flex-1 flex-col gap-4 px-4 pt-3" aria-hidden>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="skeleton h-28 w-full rounded-card" />
+        ))}
+      </div>
+    );
   }
 
   return (
@@ -216,6 +266,7 @@ export function CheckoutForm({ initialName }: { initialName: string }) {
           </h2>
           <RadioGroup
             name="payment"
+            label="Способ оплаты"
             value={payment}
             onChange={(value: string) => {
               haptic.selection();
@@ -248,9 +299,6 @@ export function CheckoutForm({ initialName }: { initialName: string }) {
               setComment(e.target.value.slice(0, 200))
             }
           />
-          <p className="mt-1 text-right text-caption text-muted" data-numeric>
-            {comment.length}/200
-          </p>
         </Card>
 
         <div className="flex items-center justify-between px-1">

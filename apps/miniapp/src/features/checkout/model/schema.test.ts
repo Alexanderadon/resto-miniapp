@@ -139,6 +139,34 @@ describe("createOrderInputSchema", () => {
     });
   });
 
+  describe("expectedTotalTenge (опциональный)", () => {
+    it("вход без expectedTotalTenge проходит", () => {
+      const result = createOrderInputSchema.safeParse(validInput());
+      expect(result.success).toBe(true);
+      expect(result.data?.expectedTotalTenge).toBeUndefined();
+    });
+
+    it("целое положительное значение проходит", () => {
+      const result = createOrderInputSchema.safeParse({
+        ...validInput(),
+        expectedTotalTenge: 4500,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it.each([
+      ["ноль", 0],
+      ["дробное", 4500.5],
+      ["отрицательное", -100],
+    ])("expectedTotalTenge %s отклоняется", (_name, expectedTotalTenge) => {
+      const result = createOrderInputSchema.safeParse({
+        ...validInput(),
+        expectedTotalTenge,
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
   describe("прочие поля", () => {
     it("paymentMethod, отличный от CASH, отклоняется (v1 — только наличные)", () => {
       const result = createOrderInputSchema.safeParse({

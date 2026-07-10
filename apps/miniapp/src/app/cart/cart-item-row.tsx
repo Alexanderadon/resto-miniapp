@@ -72,7 +72,8 @@ export function CartItemRow({ item }: { item: CartItem }) {
         <div className="mt-2 flex items-center justify-between gap-2">
           <Stepper
             value={item.quantity}
-            min={MIN_ITEM_QUANTITY}
+            // min=0: минус активен при количестве 1 — декремент удаляет позицию
+            min={0}
             max={MAX_ITEM_QUANTITY}
             itemName={item.name}
             onChange={(next) =>

@@ -32,12 +32,21 @@ export function formatPhoneMask(digits: string): string {
 
 /** Достаёт 10 локальных цифр из произвольного ввода (маска, вставка «8707…», «+7707…») */
 export function extractPhoneDigits(raw: string): string {
-  let digits = raw.replace(/\D/g, "");
-  if (raw.trimStart().startsWith("+")) {
-    // «7» из фиксированного префикса +7
+  // Вставка «+7707…» в конец занятого поля даёт два «+» — парсим от последнего.
+  const plusIndex = raw.trimStart().startsWith("+") ? raw.lastIndexOf("+") : -1;
+  const source = plusIndex >= 0 ? raw.slice(plusIndex) : raw;
+
+  let digits = source.replace(/\D/g, "");
+  if (plusIndex >= 0) {
+    // «7» из префикса +7 (маска или вставленный «+7707…»)
     digits = digits.slice(1);
+    // Вставка «87071234567» после префикса маски: локальный номер
+    // с «8» не начинается — это код страны, отбрасываем.
+    if (digits.length === 11 && digits[0] === "8") {
+      digits = digits.slice(1);
+    }
   } else if (digits.length === 11 && (digits[0] === "7" || digits[0] === "8")) {
-    // Вставка полного номера с кодом страны
+    // Вставка полного номера с кодом страны вместо содержимого поля
     digits = digits.slice(1);
   }
   return digits.slice(0, 10);

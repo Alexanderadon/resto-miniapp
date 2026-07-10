@@ -2,7 +2,11 @@
 
 import Image from "next/image";
 import { IconButton, Stepper, formatTenge } from "@repo/ui";
-import { useCartStore } from "@/entities/cart";
+import {
+  MAX_ITEM_QUANTITY,
+  MIN_ITEM_QUANTITY,
+  useCartStore,
+} from "@/entities/cart";
 import type { MenuItemData } from "@/entities/menu";
 import { haptic } from "@/shared/lib/haptics";
 
@@ -40,12 +44,21 @@ export function DishCard({ item, onOpen, hydrated }: DishCardProps) {
   };
 
   const handleIncrement = () => {
+    if (quantity >= MAX_ITEM_QUANTITY) {
+      haptic.notification("warning");
+      return;
+    }
     haptic.impact("light");
     increment(item.id);
   };
 
   const handleDecrement = () => {
-    haptic.impact("light");
+    if (quantity <= MIN_ITEM_QUANTITY) {
+      // Декремент с 1 = удаление позиции (стор делает это сам).
+      haptic.notification("warning");
+    } else {
+      haptic.impact("light");
+    }
     decrement(item.id);
   };
 
@@ -85,6 +98,9 @@ export function DishCard({ item, onOpen, hydrated }: DishCardProps) {
         {inCart ? (
           <Stepper
             value={quantity}
+            // min=0: минус активен при количестве 1 — декремент удаляет позицию
+            min={0}
+            max={MAX_ITEM_QUANTITY}
             itemName={item.name}
             onChange={(next) =>
               next > quantity ? handleIncrement() : handleDecrement()

@@ -11,6 +11,11 @@ export const MAX_PICKUP_AHEAD_MS = 48 * 60 * 60 * 1000;
 /** Максимум одной позиции в заказе (синхронизирован с клэмпом корзины) */
 export const MAX_ORDER_ITEM_QUANTITY = 20;
 
+/** Рабочие часы самовывоза (Asia/Almaty), в минутах от полуночи:
+ *  первый слот 10:00, последний 21:30. Синхронизировано с lib/time-slots.ts. */
+export const PICKUP_OPEN_MINUTES = 10 * 60;
+export const PICKUP_LAST_SLOT_MINUTES = 21 * 60 + 30;
+
 export const customerNameSchema = z
   .string()
   .trim()
@@ -35,6 +40,8 @@ export const createOrderInputSchema = z.object({
   comment: commentSchema.optional(),
   /** В v1 доступна только оплата наличными; STRIPE — следующая итерация */
   paymentMethod: z.literal("CASH"),
+  /** Итог, который видел клиент; при расхождении с пересчётом из БД — PRICE_CHANGED */
+  expectedTotalTenge: z.number().int().positive().optional(),
   items: z
     .array(
       z.object({
@@ -52,7 +59,9 @@ export type CreateOrderErrorCode =
   | "VALIDATION"
   | "PICKUP_TIME_INVALID"
   | "ITEMS_UNAVAILABLE"
+  | "PRICE_CHANGED"
   | "TOO_MANY_ACTIVE"
+  | "CONFLICT"
   | "INTERNAL";
 
 export type CreateOrderResult =
@@ -63,4 +72,6 @@ export type CreateOrderResult =
       message: string;
       /** Для ITEMS_UNAVAILABLE — какие позиции убрать из корзины */
       unavailableIds?: string[];
+      /** Для PRICE_CHANGED — актуальный итог, пересчитанный из БД */
+      actualTotalTenge?: number;
     };
