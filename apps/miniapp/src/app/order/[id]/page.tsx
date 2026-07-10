@@ -7,6 +7,7 @@ import { OrderStatus, prisma } from "@repo/db";
 import { Card, StatusBadge, formatTenge } from "@repo/ui";
 import { requireSession } from "@/shared/session";
 import { formatPickupTime } from "@/features/checkout";
+import { CancelOrderButton } from "@/features/order-cancel";
 import { OrderStatusPoller } from "./order-status-poller";
 import { ShowNumberButton } from "./show-number-button";
 
@@ -46,29 +47,42 @@ export default async function OrderPage({
   });
   if (!order) notFound();
 
-  const isFinal =
-    order.status === OrderStatus.DONE || order.status === OrderStatus.CANCELLED;
+  const isCancelled = order.status === OrderStatus.CANCELLED;
+  const isFinal = order.status === OrderStatus.DONE || isCancelled;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center px-4 pt-10 pb-safe-4">
       <style>{`@keyframes order-check-in{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}`}</style>
 
       <div
-        className="flex h-16 w-16 items-center justify-center rounded-full bg-success-soft text-success"
+        className={`flex h-16 w-16 items-center justify-center rounded-full ${
+          isCancelled ? "bg-danger-soft text-danger" : "bg-success-soft text-success"
+        }`}
         style={{ animation: "order-check-in 300ms ease-out both" }}
       >
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden>
-          <path
-            d="M5 14.5l6 6L23 8.5"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          {isCancelled ? (
+            <path
+              d="M8 8l12 12M20 8L8 20"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+          ) : (
+            <path
+              d="M5 14.5l6 6L23 8.5"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
         </svg>
       </div>
 
-      <h1 className="mt-4 text-title text-ink">Заказ принят!</h1>
+      <h1 className="mt-4 text-title text-ink">
+        {isCancelled ? "Заказ отменён" : "Заказ принят!"}
+      </h1>
       <p className="mt-1 text-4xl font-bold text-ink" data-numeric>
         № {order.publicNumber}
       </p>
@@ -139,6 +153,9 @@ export default async function OrderPage({
           Вернуться в меню
         </Link>
         <ShowNumberButton publicNumber={order.publicNumber} />
+        {order.status === OrderStatus.NEW && (
+          <CancelOrderButton orderId={order.id} />
+        )}
       </div>
     </main>
   );
