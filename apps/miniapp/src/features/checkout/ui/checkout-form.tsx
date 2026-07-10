@@ -89,11 +89,14 @@ export function CheckoutForm({ initialName }: { initialName: string }) {
   }, [name, phoneDigits, comment]);
 
   // Прямой заход с пустой корзиной → в корзину (empty-state).
+  // Только после маунта: во время гидрации useSyncExternalStore отдаёт
+  // серверный снапшот (пустой), и без гварда редирект срабатывал бы
+  // на любой прямой заход/перезагрузку /checkout с полной корзиной.
   useEffect(() => {
-    if (items.length === 0 && !succeededRef.current) {
+    if (mounted && items.length === 0 && !succeededRef.current) {
       router.replace("/cart");
     }
-  }, [items.length, router]);
+  }, [mounted, items.length, router]);
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
